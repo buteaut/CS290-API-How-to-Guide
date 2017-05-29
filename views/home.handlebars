@@ -1,0 +1,179 @@
+<h1>API guide for thetvdb.com</h1>
+
+<h3>First thing's first, what is an API?</h3>
+<div>
+    API, which stands for Application Program Interface, in broad terms is a a framework for different systems interacting with each other.
+    In the context of a website the API acts as a layer of abstraction that lets the user request information from or supply information to a server or website
+    without knowing exactly how the server handles the requests. The API is essentially a list of function calls you can use to interact with a website or server.
+    Using an API works the same way as say, importing the math library in C to use the pow function. You do not have to understand how the pow function works,
+    instead you just have to give it valid arguments and it will return a result based on those arguments.</div>
+
+<h3>What's this guide about?</h3>
+<div>
+    Now that the general idea of an API has been explained it is time to introduce the website who's API is the focus of this guide
+    <a href="http://www.thetvdb.com">thetvdb.com</a>. Thetvdb is a website that acts as a database for the metadata to television shows. For someone who
+    creates digital copies of their physical media to stream to their various devices this is a very nice thing to have.
+</div>
+
+<h3>What does The TVDB API allow me to do?</h3>
+<div>
+    The API for thetvdb.com is simple but useful. It allows the user to search for a television series by name, IMDB id, or Zap2it id, and filter the
+    results by language. This will return several bits of information about the series but the most important is the id that the TVDB uses for the series.
+    With this id further calls to the API can give additional information such as an overview of the series, what network it runs on, when it airs, what
+    the rating is for the series, fan art as well as official images of the show, etc. The series id can also be used to gather information about individual
+    episodes such as their absolute, aired, and dvd episode number, the episode name, an overview of the episode, etc. It is also possible to get a list of
+    actors in the series that include the actor's name, role, and image. There is even an API call that will tell you if a show in the database has been updated since
+    the time you specify to check. The API isn't only for requesting information though, there are also calls that can be used to rate a series or episode, or to add
+    a series to the user's favorites.
+</div>
+
+<h3>How do I use the API?</h3>
+<div>
+    In order to use the API there are a few steps that you have to go through. First, sign up for an account <a href="http://thetvdb.com/?tab=register">here</a>. Second, while
+    logged in, go <a href="http://thetvdb.com/?tab=apiregister">here</a> to get an API key. You'll need your API key to get a JWT token that is included in the header of
+    all of your requests for information. The JWT token is good for 24 hours of use. After that you'll have to request another token. Keep in mind that making a simple Ajax call
+    to the API will be blocked for security reasons so making your own html page with a bit of javascript by itself will not get the results you want. There are several options for dealing
+    with this. The first, and fastest for prototyping, is using the ARC add-on to the chrome browser to make the calls and view the JSON responses. A screenshot of what this looks like
+    will be included after each example. A more robust method of making these calls is setting up a server backend using node.js, which is how this guide is set up. The javascript code for this
+    page will be included at the end of the guide. There are several ways to improve the included code, like adding the option for user inputs, and it would be a good next step to take once
+    the content of this guide is understood. The following are some code examples of what you'll be doing to utilize the API:
+</div>
+<div>
+    <p>
+        <b>Requesting a JWT token</b>
+    </p>
+    To request a JWT token send a post request to https://api.thetvdb.com which includes a JSON string of the format {"apikey":"string", "userkey":"string", "username":"string"}
+    where the string in each corresponds to your account information that is found under the account button on the TVDB webpage when logged in. Note that the userkey (shows as
+    Account Identifier on the account page when logged in on thetvdb.com) and username (the username of the account) are optional and are only needed if any of the user calls
+    are going to be used for the session. Ordinarily, it is a good idea to keep the apikey, userkey, and username associated with an account a secret but since this is a guide,
+    and an account was created specifically for this demonstration, this information will be shown to give a better idea of the call used.
+    If a POST request is sent to https://api.thetvdb.com/login with a body of {"apikey":"F81BE2409EA511BB","userkey":"6979FCE9ACA3D94E","username":"testOSU"} the following is
+    JWT token received.
+
+
+        <ul>
+            {{#each tokenResponse}}
+            <li>{{this}}
+            {{/each}}
+        </ul>
+    The equivalent of this using ARC
+    <p>
+    <img src="/images/JWTtoken.png" alt="JWT Token" style="width:512px;height:512px;">
+    </p>
+
+</div>
+<div>
+    <p>
+        <b>Searching for a television series</b>
+    </p>
+    Now that a JWT token has been obtained it needs to be included in the header of all of the future requests. The format for this is "Authorization" : "Bearer [token]" where [token] is the token
+    that was provided as a result of the JWT token request. With the Authorization header added send a GET request to https://api.thetvdb.com/search/series?name=[seriesname] where [seriesname]
+    is the name of the show. If you search for say, the show Farscape, the response to a valid query will be a JSON file that will contain data that looks something like this:
+
+    <ul>
+        {{#each seriesResponse}}
+        <li>{{this.name}}: {{this.value}}
+        {{/each}}
+    </ul>
+    One item to make special note of here is the id. This number is the identifier of the series in theTVDB's internal database and is used to do anything involving the series, such as searching
+    for information about specific episodes, adding a series to the user favorites, rating a series, etc. The equivalent of this using ARC
+    <p>
+        <img src="/images/SeriesSearch.png" alt="JWT Token" style="width:512px;height:512px;">
+    </p>
+    <p>
+        <b>Finding User Favorites</b>
+    </p>
+    Since the userkey and username were included in the request for a JWT token the API can be used to access data specific to the testOSU user. Prior to writing this guide a few series were
+    added to the testOSU user favorites. A GET request, again using the Authorization header like before, to https://api.thetcdb.com/user/favorites will return a JSON file that will contain data that
+    looks like this:
+
+    <ul>
+        {{#each userResponse}}
+        <li>{{this.name}}: {{this.value}}
+        {{/each}}
+    </ul>
+    Each series here, Farscape, Babylon 5, and Battlestar Galactica (2003), are shown as their series id. The equivalent of this using ARC
+    <p>
+        <img src="/images/UserFavorites.png" alt="JWT Token" style="width:512px;height:512px;">
+    </p>
+</div>
+<h3>Where to go from here</h3>
+<div>
+    This guide has shown how to access theTVDB API and how to use some of the calls available. There are several other functionalities of this API that the guide did not cover such as pulling information
+    for a specific episode of a show, giving a show a rating, checking when a series' information was last updated, and more. The documentation for the API which lists all available calls can be found
+    <a href="https://api.thetvdb.com/swagger#/">here</a>. If you're unsure of the syntax for a particular call I recommend trying it with ARC. Testing calls in ARC is significantly faster than writing out
+    the code for the request in node. Finally, here is the javascript code used for this guide.
+</div>
+<p><b>Sample code</b></p>
+<code><p>var express = require('express');
+    <p>var request = require('request');
+
+    <p>var app = express();
+    <p>var handlebars = require('express-handlebars').create({defaultLayout:'main'});
+
+    <p>app.use(express.static('public'));
+
+    <p>app.engine('handlebars', handlebars.engine);
+    <p>app.set('view engine', 'handlebars');
+    <p>app.set('port', 3000);
+
+    <p>app.get('/', function(req,res){
+    <p>//POST request for Token
+    <p>request({"url":"https://api.thetvdb.com/login", "method":"POST", "headers":{"Content-Type":"application/json"}, "body":'{"apikey":"F81BE2409EA511BB","userkey":"6979FCE9ACA3D94E","username":"testOSU"}'},
+    <p>function(err, httpResponse, body){
+    <p>var token = "Bearer ";
+    <p>//console.log(body);
+    <p>var tokenResponse = [];
+    <p>tokenResponse = JSON.parse(body);
+    <p>token += tokenResponse.token;
+    <p>console.log("Token response: " + token);
+    <p>var context = {};
+    <p>context.tokenResponse = tokenResponse;
+
+    <p>//Get request for series info
+    <p>request({"url":"https://api.thetvdb.com/search/series?name=farscape", "method":"GET", "headers":{"Authorization":token}},
+    <p>function(err, httpResponse, body) {
+    <p>var seriesResponse = JSON.parse(body);
+    <p>var test = [];
+    <p>for (var item in seriesResponse.data[0])
+    <p>{
+    <p>test.push({'name':item,'value':seriesResponse.data[0][item]});
+
+    <p>}
+    <p>console.log(test);
+    <p>context.seriesResponse = test;
+
+    <p>//Get user favorites
+    <p>request({"url":"https://api.thetvdb.com/user/favorites", "method":"GET", "headers":{"Authorization":token}},
+    <p>function(err, httpResponse, body) {
+    <p>var userResponse = JSON.parse(body);
+    <p>var test = [];
+    <p>for (var item in userResponse.data)
+    <p>{
+    <p>test.push({'name':item,'value':userResponse.data[item]});
+
+    <p>}
+    <p>console.log(test);
+    <p>context.userResponse = test;
+    <p>res.render('home', context);
+    <p>});
+    <p>});
+    <p>});
+    <p>});
+
+    <p>app.use(function(req,res){
+    <p>res.status(404);
+    <p>res.render('404');
+    <p>});
+
+    <p>app.use(function(err, req, res, next){
+    <p>console.error(err.stack);
+    <p>res.type('plain/text');
+    <p>res.status(500);
+    <p>res.render('500');
+    <p>});
+
+    <p>app.listen(app.get('port'), function(){
+    <p>console.log('Express started on http://flip3.engr.oregonstate.edu:' + app.get('port') + '; press Ctrl-C to terminate.');
+    <p>});
+</code>
